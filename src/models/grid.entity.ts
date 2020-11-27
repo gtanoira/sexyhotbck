@@ -1,26 +1,27 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import * as moment from 'moment';
 
 // Entities
-import { ChannelEntity } from "./channel.entity";
+import { Channel } from "./channel.entity";
 
 @Entity({
   name: 'grids',
   database: 'globosat'
 })
-export class GridEntity {
+export class Grid {
   @PrimaryGeneratedColumn()
   public id?: number;
 
   // Relations
-  @ManyToOne(type => ChannelEntity, channel => channel.id)
-  public channel!: ChannelEntity;
+  @ManyToOne(type => Channel, channel => channel.grids)
+  @JoinColumn({ name: 'channel_id', referencedColumnName: 'id' })
+  public channel!: Channel;
 
   //Columns
-  @Column({ type: 'datetime', comment: 'Starting Date & Time (YYYY-MM-DD HH24:MI:SS) for the event' })
+  @Column({ name: 'event_start', type: 'datetime' })
   public eventStart!: string;
  
-  @Column({ comment: 'Duration (HH:MM:SS) of the event'})
+  @Column({ name: 'event_duration' })
   public eventDuration!: string;
   
   public get eventEnd(): string {
@@ -32,10 +33,10 @@ export class GridEntity {
       .toISOString();
   }
  
-  @Column({type: 'int'})
+  @Column({name: 'event_id', type: 'int'})
   public eventId!: number;
 
-  @Column()
+  @Column({ name: 'event_title' })
   public eventTitle!: string;
 
   @Column()
@@ -47,7 +48,7 @@ export class GridEntity {
   @Column()
   public cast2?: string;
 
-  @Column()
+  @Column({ name: 'title_season' })
   public titleSeason?: string;
 
   @Column({ length: 1000 })
