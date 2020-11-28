@@ -23,16 +23,7 @@ export class Grid {
  
   @Column({ name: 'event_duration' })
   public eventDuration!: string;
-  
-  public get eventEnd(): string {
-    const time = this.eventDuration.split(':');
-    return moment(this.eventEnd)
-      .add(time[0], 'hours')
-      .add(time[1], 'minutes')
-      .add(time[2], 'seconds')
-      .toISOString();
-  }
- 
+
   @Column({name: 'event_id', type: 'int'})
   public eventId!: number;
 
