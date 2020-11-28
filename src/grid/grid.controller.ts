@@ -1,4 +1,4 @@
-import { BadRequestException, Catch, Controller, Get, Param, Post, ServiceUnavailableException, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Param, Post, ServiceUnavailableException, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
 import { getConnection, QueryRunner } from 'typeorm';
 import * as xmlJs from 'xml-js';
@@ -7,12 +7,16 @@ import * as moment from 'moment';
 // Constant
 import { oneFileMemoryMulterOptions } from './one-file-opts.multer';
 //Entities, interfaces
+import { Batch } from 'src/models/batch.entity';
 import { Channel } from 'src/models/channel.entity';
 import { Grid } from 'src/models/grid.entity';
 import { ScheduleEvent, XmlGrid } from 'src/models/xml-grid.interface';
 
 @Controller('grids')
 export class GridController {
+
+  // Variable for COMMIT / ROLLBACK transactions
+  private queryRunner: QueryRunner;
 
   // Get all schedule events of a channel for a particular day
   @Get('/:channel/:schYear/:schMonth/:schDay')
@@ -66,7 +70,7 @@ export class GridController {
   @Post('/:channelId/upload/xml')
   @UseInterceptors(FileInterceptor('xmlFile', oneFileMemoryMulterOptions))
   async addGrid(
-    @Param('channel') channelId: number,
+    @Param('channelId') channelId: number,
     @UploadedFile() xmlFile: Express.Multer.File
   ): Promise<{[key: string]: any}> {
 
@@ -84,85 +88,132 @@ export class GridController {
     // Validate the channelId
     let channelInfo: Channel;
     try {
-      await connection.getRepository(Channel).findOne(channelId)
-      .then(channel => { channelInfo = channel })
-      .catch(error => { Promise.reject(error.message); })
+      await connection.getRepository(Channel).findOneOrFail({ id: channelId })
+      .then(channel => { 
+        channelInfo = channel;
+      })
+      .catch(error => { 
+        throw new Error(error.message) ;
+      })
     } catch (error) {
       throw new BadRequestException(`GS-003(E): the channel (${channelId}) doesn't exists.` )
     }
     
-    // Create batch info
-    console.log('*** channelInfo:', channelInfo);
-    const batchId = `${channelId}-${channelInfo.name}-${moment().format('YYYYMMDD-HHMMSS')}`;
-    const batchUserId = 'globosat';
-    
     // Obtain the schedule items
     const events = <ScheduleEvent[]>gridJson.ListingExport.ListingExportItem;
+    
+    // Create batch info
+    const recBatch = new Batch();
+    const batchId = `${channelId}-${channelInfo.name}-${moment().format('YYYYMMDD-HHMMSS')}`;
+    recBatch.batchId = batchId;
+    recBatch.channelName = channelInfo.name;
+    recBatch.createdBy = 'globosat';
+    recBatch.createdAt = moment().toDate();
+    const batchDateIni = this.setDateTime(events[0].scheduleDate._text, events[0].ScheduleItens.ScheduleItem.startTime._text);
+    let batchDateEnd = null;
 
     // Save the schedule items into the grids table
-    let queryRunner: QueryRunner;
     let recsInserted = 0;  // recs saved
     try {
 
       // Start DBase transaction
       console.log('*** START TRANSACTION');
-      const queryRunner: QueryRunner = connection.createQueryRunner();
-      await queryRunner.connect()  // Establish real database connection
-        .catch(error => { Promise.reject(error.message); });  
-      await queryRunner.startTransaction()  // Open a new transaction
-        .catch(error => { Promise.reject(error.message); });
+      this.queryRunner = connection.createQueryRunner();
+      await this.queryRunner.connect()  // Establish real database connection
+        .catch(error => { throw new Error(error.message); });  
+      await this.queryRunner.startTransaction()  // Open a new transaction
+        .catch(error => { throw new Error(error.message); });
 
       for (const event of events) {
-        // Prepare some data
-        const eventStart = moment(`${event.scheduleDate._text} ${this.setTime(event.ScheduleItens.ScheduleItem.startTime._text)}`, 'MM-DD-YY HH:MM:SS').format('YYYY-MM-DD HH:MM:SS');
-        
+
+        batchDateEnd = this.setDateTime(event.scheduleDate._text, event.ScheduleItens.ScheduleItem.startTime._text);
+
         // Create new schedule event
         const gridEvent: Grid = {
           channel: channelInfo,
-          eventStart,
+          eventStart: this.setDateTime(event.scheduleDate._text, event.ScheduleItens.ScheduleItem.startTime._text),
           eventDuration: event.ScheduleItens.ScheduleItem.titleDuration._text,
           eventId: +event.ScheduleItens.ScheduleItem.eventProfileId._text,
-          eventTitle: event.ScheduleItens.ScheduleItem.titleName._text,
+          eventTitle: event.ScheduleItens.ScheduleItem.titleName._text ? event.ScheduleItens.ScheduleItem.titleName._text : 'no title',
           director: event.ScheduleItens.ScheduleItem.director._text,
           cast1: event.ScheduleItens.ScheduleItem.cast1._text,
           cast2: event.ScheduleItens.ScheduleItem.cast2._text,
           titleSeason: event.ScheduleItens.ScheduleItem.titleSeason._text,
-          synopsis: event.ScheduleItens.ScheduleItem.titleSynopsis._text
+          synopsis: event.ScheduleItens.ScheduleItem.titleSynopsis._text,
+          batchId
         };
 
         // Save the event
         await connection.getRepository(Grid).insert(gridEvent)
         .then(() => { recsInserted += 1; })
-        .catch(error => { Promise.reject(`GS-004(E): inserting schedule event ${gridEvent.eventId} @ ${gridEvent.eventStart} (${error.message})`); })
+        .catch(error => { throw new Error(`GS-004(E): inserting schedule event ${gridEvent.eventId} @ ${gridEvent.eventStart} (${error.message})`); })
       }
       
     } catch (error) {
-      queryRunner.rollbackTransaction();
-      queryRunner.release();  // Release DBase transaction
-      throw new ServiceUnavailableException(error);
+      console.log();
+      console.log('*** ROLLBACK');
+      this.queryRunner?.rollbackTransaction();
+      this.queryRunner?.release();  // Release DBase transaction
+      throw new ServiceUnavailableException(error.message);
+    }
+
+    // Save batch
+    try {
+      // save batch record
+      recBatch.description = `UPLOAD ${channelInfo.name}: ` +
+        `From: ${batchDateIni} ` +
+        `To: ${batchDateEnd} ` +
+        `By: ${'globosat'} ` +
+        `Records saved: ${recsInserted}`;
+      await connection.getRepository(Batch)
+      .save(recBatch)
+      .catch(error => {
+        throw new Error(`Error saving BATCH record: ${error.message}`);
+      });
+
+    } catch (error) {
+      console.log('*** ROLLBACK:', error.message);
+      this.queryRunner?.rollbackTransaction();
+      this.queryRunner?.release();  // Release DBase transaction
+      throw new ServiceUnavailableException(error.message);
     }
 
     // Commit transaction
     try {
-      queryRunner.commitTransaction();
+      console.log('*** COMMIT');
+      this.queryRunner?.commitTransaction();
     } catch (error) {
-      queryRunner.rollbackTransaction();
-      queryRunner.release();  // Release DBase transaction
-      throw new ServiceUnavailableException(error);
+      console.log('*** ROLLBACK');
+      this.queryRunner?.rollbackTransaction();
+      this.queryRunner?.release();  // Release DBase transaction
+      throw new ServiceUnavailableException(error.message);
     }
 
     return {message: `File succesfully uploaded. ${recsInserted} schedule events were saved.`}
   }
 
-  private setTime(duration: string): string {
-    let rtnTime = '00:00:00';
-    if (duration.indexOf(':')) {
-      const timeDuration = duration.split(':');
-      rtnTime = `${this.lPad(timeDuration[0], '0', 2)}:${this.lPad(timeDuration[1], '0', 2)}:00`;
+  // Create a date in the format YYYY-MM-DD HH:MM:SS and return null if there is a problem
+  private setDateTime(day: string, duration: string): string {
+    
+    // Set Date
+    const auxDate = day.indexOf('/') < 0 ? day.split('-') : day.split('/');
+    const rtnDate = `20${this.lPad(auxDate[2], '0', 2)}-${this.lPad(auxDate[0], '0', 2)}-${this.lPad(auxDate[1], '0', 2)}`;
+
+    // Set Time
+    const timeDuration = duration.split(':');
+    const rtnTime = `${this.lPad(timeDuration[0], '0', 2)}:${this.lPad(timeDuration[1], '0', 2)}:00`;
+
+    // Validate the day created
+    let rtnValue = `${rtnDate} ${rtnTime}`;
+    try {
+      const xxx = moment(rtnValue, 'YYYY-MM-DD HH:MM:SS');
+    } catch (error) {
+      rtnValue = null;
     }
-    return rtnTime;
+    return rtnValue;
   }
 
+  // Left padding
   private lPad(data: string, character: string, count: number): string {
     const rtnData = `${character.repeat(count)}${data.trim()}`;
     return rtnData.substr(rtnData.length - count, rtnData.length);

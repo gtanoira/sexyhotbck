@@ -8,6 +8,7 @@ import { MYSQL_HOST, MYSQL_PORT, MYSQL_SYNCHRONIZE } from './environment/environ
 // Modules
 import { GridModule } from './grid/grid.module';
 //Entities
+import { Batch } from './models/batch.entity';
 import { Channel } from './models/channel.entity';
 import { Grid } from './models/grid.entity';
 
@@ -23,6 +24,7 @@ import { Grid } from './models/grid.entity';
       password: 'root123',
       database: 'globosat',
       entities: [
+        Batch,
         Channel,
         Grid
       ],

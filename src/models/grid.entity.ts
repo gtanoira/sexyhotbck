@@ -44,4 +44,7 @@ export class Grid {
 
   @Column({ length: 1000 })
   public synopsis?: string;
+
+  @Column({ name: 'batch_id' })
+  public batchId?: string;
 }
