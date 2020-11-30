@@ -1,6 +1,7 @@
 # diretories
 /public/xml/*
 /src/environment/*
+/src/database
 
 # compiled output
 /dist
