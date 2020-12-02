@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 // Modules
 import { GridModule } from './grid/grid.module';
+import { UserModule } from './user/user.module';
 // Databases
 import { globosatProvider } from './database/database.providers';
 
@@ -14,7 +15,8 @@ import { globosatProvider } from './database/database.providers';
     TypeOrmModule.forRoot({
       ...globosatProvider,
       type: 'mysql'
-    })
+    }),
+    UserModule
   ],
   controllers: [
     AppController
