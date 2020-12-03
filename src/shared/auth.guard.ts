@@ -5,12 +5,33 @@ import * as moment from 'moment';
 
 // Environment
 import { SECRET_KEY } from 'src/environment/environment.settings';
+// User Roles (enum)
+import { UserRoles } from 'src/user/user.roles';
+
+/**
+ * This GUARD runs some checks before granting access to a route. 
+ * If any of these checks fail, the route is not executed.
+ * The checks are:
+ * 1) Token: must be valid and not expired
+ * 2) User object: after the token, the user object is created, so this check validates this.
+ *    The user object must exist in the Express request
+ * 3) Role: the user must have at least one of the roles required to access the route.
+ * 
+ * Roles required: provided by the decorator @RolesRequired()
+ * The user must have ONE (1) of these roles
+ * @param rolesRequired: string 
+ * 
+ * Token: provided by the req.headers.authorization
+ * @param req.headers.authorization
+ * 
+ * @return boolean 
+ */
 
 @Injectable()
 export class AuthGuard implements CanActivate {
 
   constructor(
-    private reflector: Reflector
+    private readonly reflector: Reflector
   ) {}
   
   canActivate(context: ExecutionContext): boolean {
@@ -19,16 +40,32 @@ export class AuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest();
 
     // Validate token and get user object
-    const rtnAuth = this.validateToken(req);
-
-    // Check if the user has the roles needed.
-    const rolesRequired = this.reflector.get<string[]>('rolesRequired', context.getHandler());
+    const ynToken = this.validateToken(req);
+    
+        // Check if the user has the roles needed.
+    let ynRoles = true;
+    const rolesRequired = this.reflector?.get<string[]>('rolesRequired', context.getHandler());
     if (rolesRequired) {
-      const user = req.user;
-      // return matchRoles(rolesNeeded, user.roles);
+      const usrRoles = req.user.roles;
+      // Validate role
+      if (usrRoles) {
+        // Is ADMIN?
+        if (usrRoles.indexOf(UserRoles.ADMIN) >= 0) {
+          ynRoles = true;
+        } else {
+          const existingRole = usrRoles.split(',').find(role => rolesRequired.indexOf(role) >= 0);
+          ynRoles = existingRole ? true : false;      
+        }
+      } else {
+        ynRoles = false;
+      }
+    }
+
+    if (!ynToken || !req.user || !ynRoles) {
+      throw new ForbiddenException('GS-009(E): insufficient privileges.');
     }
     
-    return rtnAuth;
+    return true;
   }
 
   // Validate the token

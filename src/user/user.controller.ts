@@ -5,6 +5,8 @@ import {
   Controller, 
   Get, 
   Post, 
+  Req, 
+  Res, 
   ServiceUnavailableException, 
   UnauthorizedException, 
   UseGuards, 
@@ -21,7 +23,7 @@ import { GetUser } from 'src/common/get-user.decorator';
 // User roles
 import { UserRoles } from './user.roles';
 // Decorators
-import { RolesNeeded } from 'src/common/roles-needed.decorator';
+import { RolesRequired } from 'src/common/roles-required.decorator';
 
 @Controller('')
 export class UserController {
@@ -31,7 +33,8 @@ export class UserController {
   ) {}
 
   @Get('/api/users')
-  @UseGuards(new AuthGuard)
+  @RolesRequired(UserRoles.EDITOR, UserRoles.READER)
+  @UseGuards(AuthGuard)
   public async getAllUsers() {
     return this.userService.getAllUsers()
     .catch(error => {
@@ -51,12 +54,13 @@ export class UserController {
   }
 
   @Post('/register')
-  @RolesNeeded(UserRoles.ADMIN)
-  @UseGuards(new AuthGuard('rolesRequired', ))
+  @RolesRequired(UserRoles.ADMIN)
+  @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe())
   public async register(
     @GetUser('roles') roles: string,
-    @Body() data: UserDto
+    @Body() data: UserDto,
+    @Req() req: any
   ) {
     // Check if the user has the admin role
     if (!roles || roles.indexOf(UserRoles.ADMIN) < 0) {
@@ -70,6 +74,7 @@ export class UserController {
       }
     });
     // Create the new user
+    data['createdBy'] = req.user.userId;  // add UserId
     return this.userService.register(data)
     .catch(error => {
       throw new ConflictException(error);

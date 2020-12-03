@@ -8,13 +8,16 @@ import * as moment from 'moment';
 import { oneFileMemoryMulterOptions } from './one-file-opts.multer';
 // Services
 import { AuthGuard } from 'src/shared/auth.guard';
+// Existing ROLES (enum)
+import { UserRoles } from 'src/user/user.roles';
 //Entities, interfaces
 import { Batch } from 'src/models/batch.entity';
 import { Channel } from 'src/models/channel.entity';
 import { Grid } from 'src/models/grid.entity';
 import { ScheduleEvent, XmlGrid } from 'src/models/xml-grid.interface';
+import { RolesRequired } from 'src/common/roles-required.decorator';
 
-@Controller('grids')
+@Controller('api/grids')
 export class GridController {
 
   // Variable for COMMIT / ROLLBACK transactions
@@ -22,7 +25,8 @@ export class GridController {
 
   // Get all schedule events of a channel for a particular day
   @Get('/:channel/:schYear/:schMonth/:schDay')
-  @UseGuards(new AuthGuard)
+  @RolesRequired(UserRoles.READER, UserRoles.EDITOR)
+  @UseGuards(AuthGuard)
   async getAll(
     @Param('channel') pchannelId: number,
     @Param('schYear') schYear: string,
@@ -71,7 +75,8 @@ export class GridController {
     
   // Post a grid using a XML file
   @Post('/:channelId/upload/xml')
-  @UseGuards(new AuthGuard)
+  @RolesRequired(UserRoles.EDITOR)
+  @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('xmlFile', oneFileMemoryMulterOptions))
   async addGrid(
     @Param('channelId') channelId: number,

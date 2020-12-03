@@ -18,5 +18,6 @@ export class UserRODto {
   public userName!: string;
   public roles!: string;
   public createdAt!: Date;
+  public createdBy!: string;
   public token?: string;
 }

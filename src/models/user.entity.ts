@@ -7,9 +7,6 @@ import { SECRET_KEY } from '../environment/environment.settings';
 // DTO's
 import { UserRODto } from 'src/user/user.dto';
 
-import { UserRoles } from '../user/user.roles';
-
-
 @Entity({
   name: 'users'
 })
@@ -20,6 +17,9 @@ export class User {
 
   @CreateDateColumn({ name: 'created_at' })
   public createdAt: Date;
+
+  @Column({ name: 'created_by', default: '' })
+  public createdBy!: string;
 
   @Column({
     name: 'user_id',
@@ -41,7 +41,7 @@ export class User {
   private async beforeInsert(): Promise<void> {
     // Hash password field
     this.password = await bcrypt.hash(this.password, 10);
-   }
+  }
 
   // What to show as response from a http request
   public toResponse(showToken = true): UserRODto {
@@ -50,7 +50,8 @@ export class User {
       userId: this.userId,
       userName: this.name,
       roles: this.roles,
-      createdAt: this.createdAt
+      createdAt: this.createdAt,
+      createdBy: this.createdBy
     };
     if (showToken) {
       responseObj['token'] = this.token;
