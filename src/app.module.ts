@@ -8,6 +8,7 @@ import { GridModule } from './grid/grid.module';
 import { UserModule } from './user/user.module';
 // Databases
 import { globosatProvider } from './database/database.providers';
+import { TranslateService } from './shared/translate.service';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { globosatProvider } from './database/database.providers';
   ],
   providers: [
     AppService,
+    TranslateService
   ],
 })
 export class AppModule {}

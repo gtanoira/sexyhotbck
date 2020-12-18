@@ -5,11 +5,17 @@ import { getConnection } from 'typeorm';
 import { UserDto, UserRODto } from './user.dto';
 // Schemas
 import { User } from '../models/user.entity';
+//Services
+import { TranslateService } from 'src/shared/translate.service';
 
 @Injectable()
 export class UserService {
 
   private connection = getConnection('GLOBOSAT')
+
+  constructor(
+    private translate: TranslateService
+  ) {}
 
   // Return all users
   public async getAllUsers(): Promise<UserRODto[]> {
@@ -20,25 +26,25 @@ export class UserService {
     });
   }
 
-  public async login(data: UserDto): Promise<UserRODto> {
+  public async login(data: UserDto, language: string): Promise<UserRODto> {
     const { userId, password } = data;
     const user = await this.connection.getRepository(User).findOne({userId});
 
     // Check for existing user and correct password
     if (!user || await user.okPassword(password) === false) {
-      return Promise.reject('GS005(E):user does not exsits or the password is incorrect.');
+      return Promise.reject(await this.translate.key('GS-005', language));
     }
     // Response user with token
     return user.toResponse(true);
   }
 
   // Register new users
-  public async register(data: UserDto): Promise<UserRODto> {
+  public async register(data: UserDto, language: string): Promise<UserRODto> {
     const user = await this.connection.getRepository(User).findOne({userId: data.userId});
 
     // Check if exists
     if (user) {
-      return Promise.reject('GS-006(E): the user exists.');
+      return Promise.reject(await this.translate.key('GS-006', language));
     }
 
     // Prepare data
@@ -52,7 +58,7 @@ export class UserService {
       return data.toResponse(false);
     })
     .catch(error => {
-      return Promise.reject(`GS-007(E): creating user ${data.userId} (${error.message})`)
+      return Promise.reject(`${async () => await this.translate.key('GS-007', language)} ${data.userId} (${error.message})`)
     });
   }
 }

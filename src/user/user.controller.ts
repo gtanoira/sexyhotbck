@@ -6,7 +6,6 @@ import {
   Get, 
   Post, 
   Req, 
-  Res, 
   ServiceUnavailableException, 
   UnauthorizedException, 
   UseGuards, 
@@ -19,10 +18,11 @@ import { UserDto } from 'src/user/user.dto';
 // Services
 import { AuthGuard } from 'src/shared/auth.guard';
 import { UserService } from './user.service';
-import { GetUser } from 'src/common/get-user.decorator';
 // User roles
 import { UserRoles } from './user.roles';
 // Decorators
+import { GetUser } from 'src/common/get-user.decorator';
+import { GetLanguage } from 'src/common/get-language.decorator';
 import { RolesRequired } from 'src/common/roles-required.decorator';
 
 @Controller('')
@@ -45,9 +45,10 @@ export class UserController {
   @Post('/login')
   @UsePipes(new ValidationPipe())
   public async login(
+    @GetLanguage() language: string,
     @Body() data: UserDto
   ) {
-    return this.userService.login(data)
+    return this.userService.login(data, language)
     .catch(error => {
       throw new UnauthorizedException(error);
     });
@@ -59,6 +60,7 @@ export class UserController {
   @UsePipes(new ValidationPipe())
   public async register(
     @GetUser('roles') roles: string,
+    @GetLanguage() language: string,
     @Body() data: UserDto,
     @Req() req: any
   ) {
@@ -75,7 +77,7 @@ export class UserController {
     });
     // Create the new user
     data['createdBy'] = req.user.userId;  // add UserId
-    return this.userService.register(data)
+    return this.userService.register(data, language)
     .catch(error => {
       throw new ConflictException(error);
     });
