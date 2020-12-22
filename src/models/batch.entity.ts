@@ -2,7 +2,7 @@ import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity({
   name: 'batchs',
-  database: 'globosat'
+  database: 'sexyhot'
 })
 export class Batch {
   @PrimaryGeneratedColumn()

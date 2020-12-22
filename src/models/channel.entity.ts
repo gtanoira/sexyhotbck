@@ -5,7 +5,7 @@ import { Grid } from "./grid.entity";
 
 @Entity({
   name: 'channels',
-  database: 'globosat'
+  database: 'sexyhot'
 })
 export class Channel {
   @PrimaryGeneratedColumn()

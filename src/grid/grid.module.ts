@@ -12,7 +12,7 @@ import { GridController } from './grid.controller';
   imports: [
     TypeOrmModule.forFeature(
       [Batch, Grid],
-      'GLOBOSAT'
+      'SEXYHOT'
     )
   ],
   controllers: [GridController]

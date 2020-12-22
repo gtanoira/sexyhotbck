@@ -11,7 +11,7 @@ import { TranslateService } from 'src/shared/translate.service';
 @Injectable()
 export class UserService {
 
-  private connection = getConnection('GLOBOSAT')
+  private connection = getConnection('SEXYHOT')
 
   constructor(
     private translate: TranslateService

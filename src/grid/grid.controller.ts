@@ -35,7 +35,7 @@ export class GridController {
   ): Promise<Grid[]> {
     const dayToSearch = `${schYear}-${schMonth}-${schDay}`;
     
-    const connection = getConnection('GLOBOSAT')
+    const connection = getConnection('SEXYHOT')
     const cmdSql =  connection.getRepository(Grid)
     .createQueryBuilder('grid')
     .select('grid.id', 'id')
@@ -84,7 +84,7 @@ export class GridController {
   ): Promise<{[key: string]: any}> {
 
     // Connect to the DBase
-    const connection = getConnection('GLOBOSAT');
+    const connection = getConnection('SEXYHOT');
 
     // Convert XML to JSON
     let gridJson: XmlGrid;
@@ -116,7 +116,7 @@ export class GridController {
     const batchId = `${channelId}-${channelInfo.name}-${moment().format('YYYYMMDD-HHMMSS')}`;
     recBatch.batchId = batchId;
     recBatch.channelName = channelInfo.name;
-    recBatch.createdBy = 'globosat';
+    recBatch.createdBy = 'admin';
     recBatch.createdAt = moment().toDate();
     const batchDateIni = this.setDateTime(events[0].scheduleDate._text, events[0].ScheduleItens.ScheduleItem.startTime._text);
     let batchDateEnd = null;
@@ -172,7 +172,7 @@ export class GridController {
       recBatch.description = `UPLOAD ${channelInfo.name}: ` +
         `From: ${batchDateIni} ` +
         `To: ${batchDateEnd} ` +
-        `By: ${'globosat'} ` +
+        `By: ${'admin'} ` +
         `Records saved: ${recsInserted}`;
       await connection.getRepository(Batch)
       .save(recBatch)

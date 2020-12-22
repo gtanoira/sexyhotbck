@@ -1,12 +1,12 @@
 
   {
-    "name": "GLOBOSAT", 
+    "name": "SEXYHOT", 
     "type": "mysql",
     "host": "localhost",
     "port": 3306,
     "username": "root",
     "password": "root123",
-    "database": "globosat",
+    "database": "sexyhot",
     "charset": "UTF8_GENERAL_CI",
     "timezone": "Z",
     "supportBigNumbers": true,

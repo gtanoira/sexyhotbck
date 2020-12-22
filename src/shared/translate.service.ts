@@ -6,7 +6,7 @@ import { i18n } from 'src/models/i18n.entity';
 @Injectable()
 export class TranslateService {
 
-  private connection = getConnection('GLOBOSAT')
+  private connection = getConnection('SEXYHOT')
 
   public async key(key: string, language: string): Promise<string> {
     console.log('*** key:', key, language);

@@ -7,14 +7,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { GridModule } from './grid/grid.module';
 import { UserModule } from './user/user.module';
 // Databases
-import { globosatProvider } from './database/database.providers';
+import { sexyhotProvider } from './database/database.providers';
 import { TranslateService } from './shared/translate.service';
 
 @Module({
   imports: [
     GridModule,
     TypeOrmModule.forRoot({
-      ...globosatProvider,
+      ...sexyhotProvider,
       type: 'mysql'
     }),
     UserModule

@@ -14,7 +14,7 @@ import { UserService } from './user.service';
   imports: [
     TypeOrmModule.forFeature(
       [User, i18n],
-      'GLOBOSAT'
+      'SEXYHOT'
     )
   ],
   controllers: [

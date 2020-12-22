@@ -6,7 +6,7 @@ import { Channel } from "./channel.entity";
 
 @Entity({
   name: 'grids',
-  database: 'globosat'
+  database: 'sexyhot'
 })
 export class Grid {
   @PrimaryGeneratedColumn()
