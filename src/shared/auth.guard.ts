@@ -4,9 +4,11 @@ import * as jwt from 'jsonwebtoken';
 import * as moment from 'moment';
 
 // Environment
-import { SECRET_KEY } from 'src/environment/environment.settings';
+import { AVAILABLE_LANGUAGES, SECRET_KEY } from 'src/environment/environment.settings';
 // User Roles (enum)
 import { UserRoles } from 'src/user/user.roles';
+// Services
+import { TranslateService } from './translate.service';
 
 /**
  * This GUARD runs some checks before granting access to a route. 
@@ -31,18 +33,25 @@ import { UserRoles } from 'src/user/user.roles';
 export class AuthGuard implements CanActivate {
 
   constructor(
-    private readonly reflector: Reflector
+    private readonly reflector: Reflector,
+    private translate: TranslateService
   ) {}
   
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
 
     // Get the Express request object
     const req = context.switchToHttp().getRequest();
 
+    // Get the language
+    let language = req.headers['accept-language'];
+    if (!language || !AVAILABLE_LANGUAGES.includes(language)) {
+      language = 'en';
+    }
+
     // Validate token and get user object
-    const ynToken = this.validateToken(req);
+    const ynToken = await this.validateToken(req, language);
     
-        // Check if the user has the roles needed.
+    // Check if the user has the roles needed.
     let ynRoles = true;
     const rolesRequired = this.reflector?.get<string[]>('rolesRequired', context.getHandler());
     if (rolesRequired) {
@@ -69,17 +78,19 @@ export class AuthGuard implements CanActivate {
   }
 
   // Validate the token
-  private validateToken(req: {[key: string]: any}): boolean {
+  private async validateToken(req: {[key: string]: any}, language: string): Promise<boolean> {
 
     // Validate the existance of the authorization header
     if (!req.headers.authorization) {
-      throw new ForbiddenException('GS-008(E): invalid token (no header).');
+      const msg = await this.translate.key('GS-008', language);
+      throw new ForbiddenException(`${msg} (no header).`);
     }
 
     // Validate the token
     const auth = req.headers.authorization;
     if (auth.split(' ')[0] !== 'Bearer') {
-      throw new ForbiddenException('GS-008(E): invalid token (malformed token).');
+      const msg = await this.translate.key('GS-008', language);
+      throw new ForbiddenException(`${msg} (malformed token).`);
     }
     // Decode token
     try {
@@ -88,13 +99,15 @@ export class AuthGuard implements CanActivate {
       // Validate expiration
       const expirationDate = moment.unix(decodedToken['exp']);
       if (expirationDate < moment()) {
-        throw new ForbiddenException('GS-008(E): invalid token (expired).');
+        const msg = await this.translate.key('GS-008', language);
+        throw new ForbiddenException(`${msg} (expired).`);
       }
       // Insert the user data into the Express request object
       req.user = decodedToken;
 
     } catch (error) {
-      throw new ForbiddenException('GS-008(E): invalid token (malformed token).');
+      const msg = await this.translate.key('GS-008', language);
+      throw new ForbiddenException(`${msg} (malformed token).`);
     }
     return true;
   }

@@ -1,5 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-
+// Environment
+import { AVAILABLE_LANGUAGES } from '../environment/environment.settings';
 /**
  * GetLanguage obtain the language the client expect the messages to be sent back.
  * The language is obtain from the Express request through the 'Accept-Language' header
@@ -9,11 +10,17 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
  *
  */
 export const GetLanguage = createParamDecorator(
+
   (data: unknown, ctx: ExecutionContext) => {
 
     const request = ctx.switchToHttp().getRequest();
-    const language = request.headers['accept-language'];
+    let language = request.headers['accept-language'];
 
-    return language ? language : 'en';
+    // Check for available languages
+    if (!language || !AVAILABLE_LANGUAGES.includes(language)) {
+      language = 'en';
+    }
+
+    return language;
   },
 );
