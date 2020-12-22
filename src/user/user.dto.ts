@@ -12,7 +12,7 @@ export class UserDto {
   public roles?: string;
 }
 
-// User Response DTO
+// User Response Object DTO
 export class UserRODto {
   public userId!: string;
   public userName!: string;
