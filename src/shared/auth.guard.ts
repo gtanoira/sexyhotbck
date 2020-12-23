@@ -15,8 +15,15 @@ import { TranslateService } from './translate.service';
  * If any of these checks fail, the route is not executed.
  * The checks are:
  * 1) Token: must be valid and not expired
- * 2) User object: after the token, the user object is created, so this check validates this.
- *    The user object must exist in the Express request
+ * 2) User object: after the token, the user object is created, extracting it from the token payload.
+ *    The user object is inserted in the Express request.
+ *    user Object: {
+ *                   id: 3,
+ *                   userId: 'vgrey',
+ *                   roles: 'writer',
+ *                   iat: 1608666830,
+ *                   exp: 1608753230
+ *                 }
  * 3) Role: the user must have at least one of the roles required to access the route.
  * 
  * Roles required: provided by the decorator @RolesRequired()

@@ -1,4 +1,18 @@
-import { BadRequestException, Controller, Get, Param, Post, ServiceUnavailableException, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Param,
+  Post,
+  ServiceUnavailableException,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+  UsePipes,
+  ValidationPipe
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
 import { getConnection, QueryRunner } from 'typeorm';
 import * as xmlJs from 'xml-js';
@@ -6,19 +20,29 @@ import * as moment from 'moment';
 
 // Constant
 import { oneFileMemoryMulterOptions } from './one-file-opts.multer';
-// Services
-import { AuthGuard } from 'src/shared/auth.guard';
+// Decorators
+import { GetLanguage } from 'src/common/get-language.decorator';
+import { GetUser } from 'src/common/get-user.decorator';
+import { RolesRequired } from 'src/common/roles-required.decorator';
 // Existing ROLES (enum)
 import { UserRoles } from 'src/user/user.roles';
+// Services
+import { AuthGuard } from 'src/shared/auth.guard';
+import { TranslateService } from 'src/shared/translate.service';
 //Entities, interfaces
 import { Batch } from 'src/models/batch.entity';
 import { Channel } from 'src/models/channel.entity';
 import { Grid } from 'src/models/grid.entity';
+import { GridDto } from './grid.dto';
 import { ScheduleEvent, XmlGrid } from 'src/models/xml-grid.interface';
-import { RolesRequired } from 'src/common/roles-required.decorator';
+import { User } from 'src/models/user.entity';
 
 @Controller('api/grids')
 export class GridController {
+
+  constructor(
+    private translate: TranslateService
+  ) {}
 
   // Variable for COMMIT / ROLLBACK transactions
   private queryRunner: QueryRunner;
@@ -78,7 +102,8 @@ export class GridController {
   @RolesRequired(UserRoles.EDITOR)
   @UseGuards(AuthGuard)
   @UseInterceptors(FileInterceptor('xmlFile', oneFileMemoryMulterOptions))
-  async addGrid(
+  async addGridFromXml(
+    @GetLanguage() language: string,
     @Param('channelId') channelId: number,
     @UploadedFile() xmlFile: Express.Multer.File
   ): Promise<{[key: string]: any}> {
@@ -91,7 +116,8 @@ export class GridController {
     try {
       gridJson = JSON.parse(xmlJs.xml2json(xmlFile.buffer.toString(), {compact: true, spaces: 2}));
     } catch (error) {
-      throw new BadRequestException(`GS-002(E): parsing XML file (${error.message})`);
+      const msg = await this.translate.key('GS-002', language);  // GS-002(E): parsing XML file
+      throw new BadRequestException(`${msg} (${error.message})`);
     }
 
     // Validate the channelId
@@ -105,7 +131,8 @@ export class GridController {
         throw new Error(error.message) ;
       })
     } catch (error) {
-      throw new BadRequestException(`GS-003(E): the channel (${channelId}) doesn't exists.` )
+      const msg = await this.translate.key('GS-003', language);  // GS-003(E): the channel doesn't exists.
+      throw new BadRequestException(`${msg} (${channelId})`);
     }
     
     // Obtain the schedule items
@@ -155,7 +182,10 @@ export class GridController {
         // Save the event
         await connection.getRepository(Grid).insert(gridEvent)
         .then(() => { recsInserted += 1; })
-        .catch(error => { throw new Error(`GS-004(E): inserting schedule event ${gridEvent.eventId} @ ${gridEvent.eventStart} (${error.message})`); })
+        .catch(async error => {
+          const msg = await this.translate.key('GS-004', language);  // GS-004(E): inserting schedule event
+          throw new Error(`${msg} ${gridEvent.eventId} @ ${gridEvent.eventStart} (${error.message})`);
+        })
       }
       
     } catch (error) {
@@ -176,8 +206,9 @@ export class GridController {
         `Records saved: ${recsInserted}`;
       await connection.getRepository(Batch)
       .save(recBatch)
-      .catch(error => {
-        throw new Error(`Error saving BATCH record: ${error.message}`);
+      .catch(async error => {
+        const msg = await this.translate.key('DBASE-SAVE', language);  // Error saving record BATCH
+        throw new Error(`${msg} BATCH: ${error.message}`);
       });
 
     } catch (error) {
@@ -198,7 +229,137 @@ export class GridController {
       throw new ServiceUnavailableException(error.message);
     }
 
-    return {message: `File succesfully uploaded. ${recsInserted} schedule events were saved.`}
+    const msg = await this.translate.key('GRID-UPLOAD-OK', language);  // Grid successfully uploaded. Events saved:
+    return {message: `${msg} ${recsInserted}.`}
+  }
+    
+  // Post a grid using a JSON object in the body
+  @Post('/:channelId/upload/json')
+  @RolesRequired(UserRoles.EDITOR)
+  @UseGuards(AuthGuard)
+  //@UsePipes(new ValidationPipe({errorHttpStatusCode: HttpStatus.BAD_REQUEST}))
+  async addGridFromJson(
+    @Param('channelId') channelId: number,
+    @Body(new ValidationPipe()) gridJson: GridDto,
+    @GetLanguage() language: string,
+    @GetUser() user: User
+  ): Promise<{[key: string]: any}> {
+
+    if (!gridJson && gridJson.events.length <= 0) {
+      const msg = await this.translate.key('GS-011', language);  // GS-011(E): there is nothing to process.
+      throw new BadRequestException(msg);
+    }
+    // Connect to the DBase
+    const connection = getConnection('SEXYHOT');
+
+    // Validate the channelId
+    let channelInfo: Channel;
+    try {
+      await connection.getRepository(Channel).findOneOrFail({ id: channelId })
+      .then(channel => { 
+        channelInfo = channel;
+      })
+      .catch(error => { 
+        throw new Error(error.message) ;
+      })
+    } catch (error) {
+      const msg = await this.translate.key('GS-003', language);  // GS-003(E): the channel doesn't exists.
+      throw new BadRequestException(`${msg} (${channelId})`);
+    }
+    
+    // Create batch info
+    const recBatch = new Batch();
+    const batchId = `${channelId}-${channelInfo.name}-${moment().format('YYYYMMDD-HHMMSS')}`;
+    recBatch.batchId = batchId;
+    recBatch.channelName = channelInfo.name;
+    recBatch.createdBy = 'admin';
+    recBatch.createdAt = moment().toDate();
+    const batchDateIni = `${moment(gridJson.events[0].eventStart).format("ddd, MMM Do YYYY, h:mm:ss a")} UTC`;
+    let batchDateEnd = null;
+
+    // Save the schedule items into the grids table
+    let recsInserted = 0;  // recs saved
+    try {
+
+      // Start DBase transaction
+      console.log('*** START TRANSACTION');
+      this.queryRunner = connection.createQueryRunner();
+      await this.queryRunner.connect()  // Establish real database connection
+        .catch(error => { throw new Error(error.message); });  
+      await this.queryRunner.startTransaction()  // Open a new transaction
+        .catch(error => { throw new Error(error.message); });
+
+      for (const event of gridJson.events) {
+
+        batchDateEnd = `${moment(event.eventStart).format("ddd, MMM Do YYYY, h:mm:ss a")} UTC`;;
+
+        // Create new schedule event
+        const gridEvent: Grid = {
+          channel: channelInfo,
+          eventStart: event.eventStart,
+          eventDuration: event.eventDuration,
+          eventId: +event.eventId,
+          eventTitle: event.eventTitle ? event.eventTitle : 'no title',
+          director: event.director,
+          cast1: event.cast1,
+          cast2: event.cast2,
+          titleSeason: event.titleSeason,
+          synopsis: event.synopsis,
+          batchId
+        };
+
+        // Save the event
+        await connection.getRepository(Grid).insert(gridEvent)
+        .then(() => { recsInserted += 1; })
+        .catch(async error => {
+          const msg = await this.translate.key('GS-004', language);  // GS-004(E): inserting schedule event
+          throw new Error(`${msg} ${gridEvent.eventId} @ ${gridEvent.eventStart} (${error.message})`);
+        })
+      }
+      
+    } catch (error) {
+      console.log();
+      console.log('*** ROLLBACK');
+      this.queryRunner?.rollbackTransaction();
+      this.queryRunner?.release();  // Release DBase transaction
+      throw new ServiceUnavailableException(error.message);
+    }
+
+    // Save batch
+    try {
+      // save batch record
+      recBatch.description = `UPLOAD ${channelInfo.name}: ` +
+        `From: ${batchDateIni} ` +
+        `To: ${batchDateEnd} ` +
+        `By: ${user.userId} ` +
+        `Records saved: ${recsInserted}`;
+      await connection.getRepository(Batch)
+      .save(recBatch)
+      .catch(async error => {
+        const msg = await this.translate.key('DBASE-SAVE', language);  // Error saving record BATCH
+        throw new Error(`${msg} BATCH: ${error.message}`);
+      });
+
+    } catch (error) {
+      console.log('*** ROLLBACK:', error.message);
+      this.queryRunner?.rollbackTransaction();
+      this.queryRunner?.release();  // Release DBase transaction
+      throw new ServiceUnavailableException(error.message);
+    }
+
+    // Commit transaction
+    try {
+      console.log('*** COMMIT');
+      this.queryRunner?.commitTransaction();
+    } catch (error) {
+      console.log('*** ROLLBACK');
+      this.queryRunner?.rollbackTransaction();
+      this.queryRunner?.release();  // Release DBase transaction
+      throw new ServiceUnavailableException(error.message);
+    }
+
+    const msg = await this.translate.key('GRID-UPLOAD-OK', language);  // Grid successfully uploaded. Events saved:
+    return {message: `${msg} ${recsInserted}.`}
   }
 
   // Create a date in the format YYYY-MM-DD HH:MM:SS and return null if there is a problem

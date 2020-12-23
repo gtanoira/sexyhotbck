@@ -30,19 +30,19 @@ export class Grid {
   @Column({ name: 'event_title' })
   public eventTitle!: string;
 
-  @Column()
+  @Column({ default: null })
   public director?: string;
 
-  @Column()
+  @Column({ default: null })
   public cast1?: string;
 
-  @Column()
+  @Column({ default: null })
   public cast2?: string;
 
-  @Column({ name: 'title_season' })
+  @Column({ name: 'title_season', default: null })
   public titleSeason?: string;
 
-  @Column({ length: 1000 })
+  @Column({ length: 1000, default: null })
   public synopsis?: string;
 
   @Column({ name: 'batch_id' })

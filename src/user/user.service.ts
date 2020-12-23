@@ -32,7 +32,8 @@ export class UserService {
 
     // Check for existing user and correct password
     if (!user || await user.okPassword(password) === false) {
-      return Promise.reject(await this.translate.key('GS-005', language));
+      const msg = await this.translate.key('GS-005', language);  // GS-005(E):user does not exsits or the password is incorrect.
+      return Promise.reject(msg);
     }
     // Response user with token
     return user.toResponse(true);
@@ -44,7 +45,8 @@ export class UserService {
 
     // Check if exists
     if (user) {
-      return Promise.reject(await this.translate.key('GS-006', language));
+      const msg = await this.translate.key('GS-006', language);  // GS-006(E): the user exists
+      return Promise.reject(msg);
     }
 
     // Prepare data
@@ -57,8 +59,9 @@ export class UserService {
     .then(data => {
       return data.toResponse(false);
     })
-    .catch(error => {
-      return Promise.reject(`${async () => await this.translate.key('GS-007', language)} ${data.userId} (${error.message})`)
+    .catch(async error => {
+      const msg = await this.translate.key('GS-007', language);  // GS-007(E): creating user
+      return Promise.reject(`${msg} ${data.userId} (${error.message})`)
     });
   }
 }

@@ -4,7 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 // Entities
 import { Batch } from 'src/models/batch.entity';
 import { Grid } from 'src/models/grid.entity';
-
+// Services
+import { TranslateService } from 'src/shared/translate.service';
 // Controllers
 import { GridController } from './grid.controller';
 
@@ -15,6 +16,11 @@ import { GridController } from './grid.controller';
       'SEXYHOT'
     )
   ],
-  controllers: [GridController]
+  controllers: [
+    GridController
+  ],
+  providers: [
+    TranslateService
+  ]
 })
 export class GridModule {}

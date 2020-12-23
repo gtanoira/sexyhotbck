@@ -14,9 +14,10 @@ export const oneFileMemoryMulterOptions = {
       cb(null, true);
     } else {
       // Rechazar archivo
-      cb(new BadRequestException(`API-0047(E): only XML files are available.`), false);
+      cb(new BadRequestException(`GS-001(E): only XML files are available.`), false);
     }
   },
   // Storage properties
   storage: memoryStorage()
 };
+
