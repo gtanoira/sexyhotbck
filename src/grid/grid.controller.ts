@@ -3,14 +3,12 @@ import {
   Body,
   Controller,
   Get,
-  HttpStatus,
   Param,
   Post,
   ServiceUnavailableException,
   UploadedFile,
   UseGuards,
   UseInterceptors,
-  UsePipes,
   ValidationPipe
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express/multer/interceptors/file.interceptor';
@@ -274,7 +272,7 @@ export class GridController {
     recBatch.channelName = channelInfo.name;
     recBatch.createdBy = 'admin';
     recBatch.createdAt = moment().toDate();
-    const batchDateIni = `${moment(gridJson.events[0].eventStart).format("ddd, MMM Do YYYY, h:mm:ss a")} UTC`;
+    const batchDateIni = `${moment(gridJson.events[0].eventStart).utc().format("ddd, MMM Do YYYY, h:mm:ss a")} UTC`;
     let batchDateEnd = null;
 
     // Save the schedule items into the grids table
@@ -291,7 +289,7 @@ export class GridController {
 
       for (const event of gridJson.events) {
 
-        batchDateEnd = `${moment(event.eventStart).format("ddd, MMM Do YYYY, h:mm:ss a")} UTC`;;
+        batchDateEnd = `${moment(event.eventStart).utc().format("ddd, MMM Do YYYY, h:mm:ss a")} UTC`;;
 
         // Create new schedule event
         const gridEvent: Grid = {
