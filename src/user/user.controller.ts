@@ -48,6 +48,7 @@ export class UserController {
     @GetLanguage() language: string,
     @Body() data: UserDto
   ) {
+    console.log('*** /login BODY:', data);
     return this.userService.login(data, language)
     .catch(error => {
       throw new UnauthorizedException(error);
