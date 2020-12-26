@@ -243,6 +243,8 @@ export class GridController {
     @GetUser() user: User
   ): Promise<{[key: string]: any}> {
 
+    console.log('*** HTTTP body:', gridJson);
+
     if (!gridJson && gridJson.events.length <= 0) {
       const msg = await this.translate.key('GS-011', language);  // GS-011(E): there is nothing to process.
       throw new BadRequestException(msg);
