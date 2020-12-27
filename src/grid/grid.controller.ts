@@ -143,7 +143,7 @@ export class GridController {
     recBatch.channelName = channelInfo.name;
     recBatch.createdBy = 'admin';
     recBatch.createdAt = moment().toDate();
-    const batchDateIni = this.setDateTime(events[0].scheduleDate._text, events[0].ScheduleItens.ScheduleItem.startTime._text);
+    recBatch.firstEvent = this.setDateTime(events[0].scheduleDate._text, events[0].ScheduleItens.ScheduleItem.startTime._text);
     let batchDateEnd = null;
 
     // Save the schedule items into the grids table
@@ -197,11 +197,7 @@ export class GridController {
     // Save batch
     try {
       // save batch record
-      recBatch.description = `UPLOAD ${channelInfo.name}: ` +
-        `From: ${batchDateIni} ` +
-        `To: ${batchDateEnd} ` +
-        `By: ${'admin'} ` +
-        `Records saved: ${recsInserted}`;
+      recBatch.lastEvent = batchDateEnd;
       await connection.getRepository(Batch)
       .save(recBatch)
       .catch(async error => {
@@ -272,7 +268,7 @@ export class GridController {
     recBatch.channelName = channelInfo.name;
     recBatch.createdBy = 'admin';
     recBatch.createdAt = moment().toDate();
-    const batchDateIni = `${moment(gridJson.events[0].eventStart).utc().format("ddd, MMM Do YYYY, h:mm:ss a")} UTC`;
+    recBatch.firstEvent = moment(gridJson.events[0].eventStart).utc().toISOString();
     let batchDateEnd = null;
 
     // Save the schedule items into the grids table
@@ -289,7 +285,7 @@ export class GridController {
 
       for (const event of gridJson.events) {
 
-        batchDateEnd = `${moment(event.eventStart).utc().format("ddd, MMM Do YYYY, h:mm:ss a")} UTC`;;
+        batchDateEnd = moment(event.eventStart).utc().toISOString();
 
         // Create new schedule event
         const gridEvent: Grid = {
@@ -326,11 +322,7 @@ export class GridController {
     // Save batch
     try {
       // save batch record
-      recBatch.description = `UPLOAD ${channelInfo.name}: ` +
-        `From: ${batchDateIni} ` +
-        `To: ${batchDateEnd} ` +
-        `By: ${user.userId} ` +
-        `Records saved: ${recsInserted}`;
+      recBatch.lastEvent = batchDateEnd;
       await connection.getRepository(Batch)
       .save(recBatch)
       .catch(async error => {
@@ -360,7 +352,7 @@ export class GridController {
     return {message: `${msg} ${recsInserted}.`}
   }
 
-  // Create a date in the format YYYY-MM-DD HH:MM:SS and return null if there is a problem
+  // Create a date in the format YYYY-MM-DDTHH:MM:SSZ (UTC) and return null if there is a problem
   private setDateTime(day: string, duration: string): string {
     
     // Set Date
@@ -372,9 +364,9 @@ export class GridController {
     const rtnTime = `${this.lPad(timeDuration[0], '0', 2)}:${this.lPad(timeDuration[1], '0', 2)}:00`;
 
     // Validate the day created
-    let rtnValue = `${rtnDate} ${rtnTime}`;
+    let rtnValue = `${rtnDate}T${rtnTime}Z`;
     try {
-      const xxx = moment(rtnValue, 'YYYY-MM-DD HH:MM:SS');
+      const xxx = moment(rtnValue).utc();
     } catch (error) {
       rtnValue = null;
     }

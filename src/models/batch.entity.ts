@@ -18,10 +18,12 @@ export class Batch {
   @Column({ name: 'created_by' })
   public createdBy!: string;
 
-  @Column()
-  public description?: string;
-
   @Column({ name: 'channel_name' })
   public channelName?: string;
 
+  @Column({ name: 'first_event', type: 'datetime' })
+  public firstEvent: string;
+
+  @Column({ name: 'last_event', type: 'datetime' })
+  public lastEvent: string;
 }
