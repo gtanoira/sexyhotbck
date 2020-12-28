@@ -9,8 +9,8 @@ import { SERVER_PORT } from './environment/environment.settings';
 */  
 // CORS origins habilitados a acceder a la app
 const whiteList = [
-  "http://admapps02:4800",
-  /http:\/\/10.4.[0-9]{1,3}.[0-9]{1,3}:4800/,
+  "http://gradesh.claxson.com",
+  /http:\/\/10.4.[0-9]{1,3}.[0-9]{1,3}/,
   "http://localhost:4200",
 ];
 
