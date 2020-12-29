@@ -21,7 +21,7 @@ export class BatchsController {
 
   // Get all batchs
   @Get('')
-  @RolesRequired(UserRoles.READER)
+  @RolesRequired(UserRoles.READER, UserRoles.EDITOR)
   @UseGuards(AuthGuard)
   async getAll(
     @GetLanguage() language: string,
