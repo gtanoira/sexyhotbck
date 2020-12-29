@@ -39,7 +39,7 @@ export class BatchsController {
 
   // Get the total of batchs in the DBase
   @Get('total')
-  @RolesRequired(UserRoles.READER)
+  @RolesRequired(UserRoles.READER, UserRoles.EDITOR)
   @UseGuards(AuthGuard)
   async getTotal(): Promise<{[key: string]: number}> {
         
