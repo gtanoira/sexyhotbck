@@ -26,4 +26,8 @@ export class Batch {
 
   @Column({ name: 'last_event', type: 'datetime' })
   public lastEvent: string;
+
+  @Column({ name: 'total_events', type: 'int', default: 0 })
+  public totalEvents: number;
+
 }

@@ -198,6 +198,7 @@ export class GridController {
     try {
       // save batch record
       recBatch.lastEvent = batchDateEnd;
+      recBatch.totalEvents = recsInserted;
       await connection.getRepository(Batch)
       .save(recBatch)
       .catch(async error => {
@@ -323,6 +324,7 @@ export class GridController {
     try {
       // save batch record
       recBatch.lastEvent = batchDateEnd;
+      recBatch.totalEvents = recsInserted;
       await connection.getRepository(Batch)
       .save(recBatch)
       .catch(async error => {
