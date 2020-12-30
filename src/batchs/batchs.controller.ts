@@ -37,6 +37,7 @@ export class BatchsController {
     const orderBy = sortDirection ? sortDirection.toUpperCase() : `ASC`;
     const cmdSql =  connection.getRepository(Batch)
     .createQueryBuilder('batch')
+    .select('batch.*')
     .where(channelName ? `channel_name = '${channelName}'` : null)
     .orderBy(sortField ? sortField : null, orderBy === 'ASC' ? 'ASC' : 'DESC')
     .skip(pageNo ? ((pageNo - 1) * recsPerPage) : null)
