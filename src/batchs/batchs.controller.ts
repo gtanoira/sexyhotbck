@@ -25,13 +25,26 @@ export class BatchsController {
   @UseGuards(AuthGuard)
   async getAll(
     @GetLanguage() language: string,
-    @Query('channel_id') pChannelId: number,
+    @Query('channel_name') channelName: number,
     @Query('page_no') pageNo: number,
-    @Query('recs_page') recsPerPage: number
+    @Query('recs_page') recsPerPage: number,
+    @Query('sort_field') sortField: string,
+    @Query('sort_direction') sortDirection: string
   ): Promise<Batch[]> {
-        
+
+    // Create query params
     const connection = getConnection('SEXYHOT')
-    return await connection.getRepository(Batch).find()
+    const orderBy = sortDirection ? sortDirection.toUpperCase() : `ASC`;
+    const cmdSql =  connection.getRepository(Batch)
+    .createQueryBuilder('batch')
+    .where(channelName ? `channel_name = '${channelName}'` : null)
+    .orderBy(sortField ? sortField : null, orderBy === 'ASC' ? 'ASC' : 'DESC')
+    .skip(pageNo ? ((pageNo - 1) * recsPerPage) : null)
+    .take(recsPerPage ? recsPerPage : null)
+    .getSql();
+    console.log('*** SQL:', cmdSql);
+    
+    return await connection.getRepository(Batch).query(cmdSql)
     .catch(error => {
       throw new ServiceUnavailableException(error.message);
     });
