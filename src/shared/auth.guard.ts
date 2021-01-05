@@ -15,7 +15,7 @@ import { TranslateService } from './translate.service';
  * If any of these checks fail, the route is not executed.
  * The checks are:
  * 1) Token: must be valid and not expired
- * 2) User object: after the token, the user object is created, extracting it from the token payload.
+ * 2) User object: after the token, the user object is created, extracted from the token payload.
  *    The user object is inserted in the Express request.
  *    user Object: {
  *                   id: 3,
@@ -78,9 +78,16 @@ export class AuthGuard implements CanActivate {
     }
 
     if (!ynToken || !req.user || !ynRoles) {
+      // Log un-granted user
+      console.log('*** NOT granted:', moment().utc().format('y, MMM Do, H:mm:ss UTC'));
+      console.log(`User: ${req.user.userId} - Roles: ${req.user.roles} - Url: ${req.url}`);
       throw new ForbiddenException('GS-009(E): insufficient privileges.');
     }
-    
+
+    // Log granted user
+    console.log('*** Granted:', moment().utc().format('y, MMM Do, H:mm:ss UTC'));
+    console.log(`User: ${req.user.userId} - Roles: ${req.user.roles} - Url: ${req.url}`);
+   
     return true;
   }
 
