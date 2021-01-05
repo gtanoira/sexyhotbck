@@ -31,19 +31,12 @@ export class BatchsController {
     @Query('sort_field') sortField: string,
     @Query('sort_direction') sortDirection: string
   ): Promise<Batch[]> {
-    console.log();
-    console.log('*** channelName:', channelName);
-    console.log('*** pageNo:', pageNo);
-    console.log('*** recsPerPage:', recsPerPage);
-    console.log('*** sortField:', sortField);
-    console.log('*** sortDirection:', sortDirection);
     
     // Create query params
     const connection = getConnection('SEXYHOT')
     const orderBy = sortDirection ? sortDirection.toUpperCase() : `ASC`;
-    console.log('*** orderBy:', orderBy);    
     const cmdSql =  connection.getRepository(Batch)
-    .createQueryBuilder('')
+    .createQueryBuilder('batch')
     .select('batch.id', 'id')
     .addSelect('batch.batch_id', 'batchId')
     .addSelect('batch.channel_name', 'channelName')
