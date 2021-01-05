@@ -31,13 +31,27 @@ export class BatchsController {
     @Query('sort_field') sortField: string,
     @Query('sort_direction') sortDirection: string
   ): Promise<Batch[]> {
-
+    console.log();
+    console.log('*** channelName:', channelName);
+    console.log('*** pageNo:', pageNo);
+    console.log('*** recsPerPage:', recsPerPage);
+    console.log('*** sortField:', sortField);
+    console.log('*** sortDirection:', sortDirection);
+    
     // Create query params
     const connection = getConnection('SEXYHOT')
     const orderBy = sortDirection ? sortDirection.toUpperCase() : `ASC`;
+    console.log('*** orderBy:', orderBy);    
     const cmdSql =  connection.getRepository(Batch)
-    .createQueryBuilder('batch')
-    .select('batch.*')
+    .createQueryBuilder('')
+    .select('batch.id', 'id')
+    .addSelect('batch.batch_id', 'batchId')
+    .addSelect('batch.channel_name', 'channelName')
+    .addSelect('batch.first_event', 'firstEvent')
+    .addSelect('batch.last_event', 'lastEvent')
+    .addSelect('batch.total_events', 'totalEvents')
+    .addSelect('batch.created_at', 'createdAt')
+    .addSelect('batch.created_by', 'createdBy')
     .where(channelName ? `channel_name = '${channelName}'` : null)
     .orderBy(sortField ? sortField : null, orderBy === 'ASC' ? 'ASC' : 'DESC')
     .skip(pageNo ? ((pageNo - 1) * recsPerPage) : null)
@@ -45,7 +59,7 @@ export class BatchsController {
     .getSql();
     console.log('*** SQL:', cmdSql);
     
-    return await connection.getRepository(Batch).query(cmdSql)
+    return await connection.query(cmdSql)
     .catch(error => {
       throw new ServiceUnavailableException(error.message);
     });
