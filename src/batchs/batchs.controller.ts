@@ -50,7 +50,6 @@ export class BatchsController {
     .skip(pageNo ? ((pageNo - 1) * recsPerPage) : null)
     .take(recsPerPage ? recsPerPage : null)
     .getSql();
-    console.log('*** SQL:', cmdSql);
     
     return await connection.query(cmdSql)
     .catch(error => {
