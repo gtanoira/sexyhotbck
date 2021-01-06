@@ -85,8 +85,7 @@ export class AuthGuard implements CanActivate {
     }
 
     // Log granted user
-    console.log('*** Granted:', moment().utc().format('y, MMM Do, H:mm:ss UTC'));
-    console.log(`User: ${req.user.userId} - Roles: ${req.user.roles} - Url: ${req.url}`);
+    console.log(`*** Granted: ${moment().utc().format('y, MMM Do, H:mm:ss UTC')} - User: ${req.user.userId} - Roles: ${req.user.roles} - Url: ${req.url}`);
    
     return true;
   }
