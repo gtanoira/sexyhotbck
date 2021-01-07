@@ -61,7 +61,7 @@ export class BatchsController {
 
     } catch (error) {
       console.log();
-      console.log('*** ROLLBACK');
+      console.log('  ROLLBACK');
       queryRunner?.rollbackTransaction();
       queryRunner?.release();  // Release DBase transaction
       throw new ServiceUnavailableException(error.message);
@@ -69,18 +69,18 @@ export class BatchsController {
 
     // Commit transaction
     try {
-      console.log('*** COMMIT');
+      console.log('  COMMIT');
       queryRunner?.commitTransaction();
       queryRunner?.release();  // Release DBase transaction
     } catch (error) {
-      console.log('*** ROLLBACK');
+      console.log('  ROLLBACK');
       queryRunner?.rollbackTransaction();
       queryRunner?.release();  // Release DBase transaction
       throw new ServiceUnavailableException(error.message);
     }
 
     const msg = await this.translate.key('BATCH-DELETE-OK', language);  // Batch deleted. Grid Events deleted::
-    console.log(`${msg} ${gridEventsDeleted}.`);
+    console.log(`  ${msg} ${gridEventsDeleted}.`);
     return {message: `${msg} ${gridEventsDeleted}.`}
   }
 
