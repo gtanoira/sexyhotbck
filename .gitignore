@@ -2,6 +2,7 @@
 /public/xml/*
 /src/environment/*
 /src/database
+/console_log
 
 # compiled output
 /dist
