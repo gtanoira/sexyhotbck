@@ -47,8 +47,8 @@ export class GridController {
 
   // Get all schedule events of a channel for a particular day
   @Get('/:channel/:schYear/:schMonth/:schDay')
-  @RolesRequired(UserRoles.READER, UserRoles.EDITOR)
-  @UseGuards(AuthGuard)
+  // @RolesRequired(UserRoles.READER, UserRoles.EDITOR)
+  // @UseGuards(AuthGuard)
   async getAll(
     @Param('channel') pchannelId: number,
     @Param('schYear') schYear: string,
