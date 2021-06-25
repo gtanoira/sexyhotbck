@@ -24,7 +24,7 @@ async function bootstrap() {
   // Enable CORS
   app.enableCors(
     {
-      "origin": whiteList,
+      "origin": "*",
       "methods": "GET,PUT,PATCH,POST,DELETE",
       "allowedHeaders": "Access-Control-Allow-Origin, Access-Control-Allow-Headers, Authorization, Content-Type, Accept-Language",
       "exposedHeaders": "",
